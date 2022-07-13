@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Bid RTC</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding-bottom: 3rem;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        #form {
+            background: rgba(0, 0, 0, 0.15);
+            padding: 0.25rem;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            display: flex;
+            height: 3rem;
+            box-sizing: border-box;
+            backdrop-filter: blur(10px);
+        }
+
+        #input {
+            border: none;
+            padding: 0 1rem;
+            flex-grow: 1;
+            border-radius: 2rem;
+            margin: 0.25rem;
+        }
+
+            #input:focus {
+                outline: none;
+            }
+
+        #form > button {
+            background: #333;
+            border: none;
+            padding: 0 1rem;
+            margin: 0.25rem;
+            border-radius: 3px;
+            outline: none;
+            color: #fff;
+        }
+
+        #messages {
+            list-style-type: none;
+            margin: 0;
+            padding: 0;
+        }
+
+            #messages > li {
+                padding: 0.5rem 1rem;
+            }
+
+                #messages > li:nth-child(odd) {
+                    background: #efefef;
+                }
+
+        .outsideframe {
+            width: auto;
+            border: 2px solid blue;
+            margin-top: 5%;
+        }
+
+        .bidvehicle {
+            background-color: aqua;
+            height: 150px;
+        }
+
+        .lots {
+            text-align: center;
+            position: relative;
+            top: 30px;
+        }
+
+        .currentbid {
+            background-color: antiquewhite;
+            text-align: center;
+            height: 150px;
+        }
+
+        .btnbid {
+            background-color: darkred;
+            color: white;
+            border-radius: 5px;
+            border-color: darkred;
+            height: 100%;
+            width: 100%;
+        }
+
+        .bidcover {
+            /*padding: 5px;*/
+            /*float:right;
+            margin-top:7%;*/
+            width: 25%;
+        }
+
+        input {
+            font-weight: 600;
+        }
+
+        h4 {
+            float: left;
+        }
+
+        @media(max-width:760px) {
+            ._3rdelement {
+                position: absolute;
+                left: 150px;
+            }
+
+            .bidvehicle {
+                margin-top: -20px;
+            }
+
+            .lots {
+                position: relative;
+                top: 50px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container cont" id="bidcontainer">
+
+    </div>
+
+    <!--<ul id="messages"></ul>
+    <form id="form" action="">
+        <input id="input" autocomplete="off" /><button>Send</button>
+    </form>-->
+    <!--<script src="https://unpkg.com/peerjs@1.3.2/dist/peerjs.min.js"></script>-->
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        //var peer = new Peer();
+        //var conn = peer.connect('another-peers-id');
+        //// on open will be launch when you successfully connect to PeerServer
+        //conn.on('open', function () {
+        //    // here you have conn.id
+        //    conn.send('hi!');
+        //});
+        //peer.on('connection', function (conn) {
+        //    conn.on('data', function (data) {
+        //        // Will print 'hi!'
+        //        console.log(data);
+        //    });
+        //});
+        $(document).ready(function (e) {
+            ShowLots();
+        })
+        var socket = io();
+        function ShowLots() {
+
+
+            var showbid = {
+                "Action": "GetRTC",
+                "lotNo": 0,
+                "Amount": 0
+            }
+            $.ajax({
+                crossDomain: true,
+                cache: false,
+                type: "POST",
+                url: " http://172.23.2.24/DealerStoreService.svc/BidRTC",
+                contentType: "application/json",
+                dataType: "json",
+                data: JSON.stringify(showbid),
+                success: function (Resultdata) {
+                    var Result = ConvertStringToJson(Resultdata.Result)
+                    bindbid(Result)
+                    //socket.emit('chat message', bidval);
+                },
+                error: function (xhr, status, errorThrown) {
+                }
+            });
+
+        }
+        function bindbid(Result) {
+            $("#bidcontainer").empty();
+            var bid = '';
+            for (var i = 0; i < Result.length; i++) {
+                bid += '<div class="outsideframe row"><div class="col-sm-6 bidvehicle"><div class="lots"><h1>Lot ' + Result[i].LotNo + '</h1></div></div >' +
+                    '<div class="col-sm-6 currentbid"><div class="row"><div class="col-sm-3"><h4>Current Price</h4></div>  <div class="col-sm-1"><h4>:</h4></div><div class="col-sm-3 _3rdelement"><h4>Rs.<span id="veh' + Result[i].LotNo + '">' + Result[i].Amount + '</span ></h4></div></div>' +
+                    '<div class="row">' +
+                    '<div class="col-sm-3"><h4>Bid increment</h4></div><div class="col-sm-1"><h4> :</h4></div><div class="col-sm-3 _3rdelement"><h4>Rs.<span>' + Result[i].Inc_Amount + '</span ></h4></div></div>' +
+                    '<div class="row"><div class="col-sm-3"><h4>Ask Price</h4></div><div class="col-sm-1"><h4>:</h4></div><div class="col-sm-3 _3rdelement"><input id="vehask' + Result[i].LotNo + '" type="text" value=' + Result[i].Ask_Amount + ' readonly></div>' +
+                    '<div class="col-sm-6 bidcover" style="float:right"><button class="btnbid" onclick="bidnow(\'' + "1000" + '\',\'' + 'veh' + Result[i].LotNo + '\',\'' + Result[i].LotNo + '\')" > Bid Now</button ></div>' +
+                    '</div></div></div></div></div>'
+            }
+
+            $("#bidcontainer").append(bid);
+        }
+
+        function bidnow(amount, id, lotNo) {
+            var bidval = {
+                "Action": "BidRTC",
+                "lotNo": parseInt(lotNo),
+                "Amount": parseFloat(amount).toFixed(2)
+
+
+            }
+            var Result;
+            $.ajax({
+                crossDomain: true,
+                cache: false,
+                type: "POST",
+                url: " http://172.23.2.24/DealerStoreService.svc/BidRTC",
+                contentType: "application/json",
+                dataType: "json",
+                data: JSON.stringify(bidval),
+                success: function (Resultdata) {
+                    Result = ConvertStringToJson(Resultdata.Result)
+
+
+
+                    socket.emit('chat message', Result);
+
+                    //socket.emit('chat message', bidval);
+                },
+                error: function (xhr, status, errorThrown) {
+                }
+            });
+
+
+
+        }
+
+        socket.on('chat message', function (msg) {
+
+            $("#veh" + msg[0].LotNo).text(msg[0].Amount);
+            $("#vehask" + msg[0].LotNo).val(msg[0].Ask_Amount);
+
+
+
+        });
+
+
+        function ConvertStringToJson(JSONString) {
+            if (JSONString.length == 1) {
+                return JSON.parse(JSONString);
+            }
+            else {
+                var Result = [];
+                for (var i = 0; i < JSONString.length; i++) {
+                    if (JSONString[i].length > 0) {
+                        Result.push(JSON.parse(JSONString[i]));
+                    }
+                }
+                return Result;
+            }
+        }
+
+    </script>
+
+</body>
+</html>
